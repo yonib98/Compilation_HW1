@@ -12,6 +12,9 @@ digit   		([0-9])
 letter  		([a-zA-Z])
 whitespace		([\t\n ])
 relop           ([<>!]=?|==)
+char            ([^\n\r\\\"])
+legal_escape [nrt0]|x[0-9a-fA-F][0-9a-fA-F]
+%x WORK_STRING
 %%
 
 {digit}+          			return NUM;
@@ -37,11 +40,16 @@ break                       return BREAK;
 \)                          return RPAREN;
 \{                          return LBRACE;
 \}                          return RBRACE;
-{relop}                       return RELOP;
+{relop}                      return RELOP;
 =                           return ASSIGN;
 [*+/-]                      return BINOP;
 {letter}({letter}|{digit})* return ID;
+\"                          BEGIN(WORK_STRING);
+<WORK_STRING>[\n]                        printf("unclosed string :(\n"); BEGIN(INITIAL); return -1;
+<WORK_STRING>\\[^{legal_escape}]         printf("illegal escape:(\n"); BEGIN(INITIAL);return -1;
+<WORK_STRING>({char}|\\{legal_escape})*  return STRING;
+<WORK_STRING>\"                          BEGIN(INITIAL);
 {whitespace}				;
-.		printf("Lex doesn't know what that is!\n");
+.		printf("Lex doesn't know what that is!: %s\n", yytext); return -1;
 
 %%
