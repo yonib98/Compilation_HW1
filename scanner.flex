@@ -12,13 +12,15 @@ digit   		([0-9])
 letter  		([a-zA-Z])
 whitespace		([\t\n ])
 relop           ([<>!]=?|==)
-char            ([^\n\r\\\"])
-legal_escape [nrt0]|x[0-9a-fA-F][0-9a-fA-F]
+char            ([^\\"\n\r])
+legal_escape \\[\\"nrt0x]
+qu              ([\"])
+comment         (\/\/)
 %x WORK_STRING
+%x WORK_COMMENT
 %%
 
 {digit}+          			return NUM;
-
 void                        return VOID;
 int                         return INT;
 byte                        return BYTE;
@@ -40,16 +42,17 @@ break                       return BREAK;
 \)                          return RPAREN;
 \{                          return LBRACE;
 \}                          return RBRACE;
+{comment}                   BEGIN(WORK_COMMENT);
+<WORK_COMMENT>[^\n\r]*      BEGIN(INITIAL); return COMMENT;
 {relop}                      return RELOP;
 =                           return ASSIGN;
 [*+/-]                      return BINOP;
 {letter}({letter}|{digit})* return ID;
-\"                          BEGIN(WORK_STRING);
-<WORK_STRING>[\n]                        printf("unclosed string :(\n"); BEGIN(INITIAL); return -1;
-<WORK_STRING>\\[^{legal_escape}]         printf("illegal escape:(\n"); BEGIN(INITIAL);return -1;
-<WORK_STRING>({char}|\\{legal_escape})*  return STRING;
-<WORK_STRING>\"                          BEGIN(INITIAL);
+{qu}                        BEGIN(WORK_STRING);
+<WORK_STRING>({char}|{legal_escape})*{qu}  BEGIN(INITIAL); return STRING;
+<WORK_STRING>.*             BEGIN(INITIAL); return -1;
 {whitespace}				;
-.		printf("Lex doesn't know what that is!: %s\n", yytext); return -1;
+
+.	                        return -2;
 
 %%
