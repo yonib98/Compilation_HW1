@@ -10,17 +10,18 @@
 %option noyywrap
 digit   		([0-9])
 letter  		([a-zA-Z])
-whitespace		([\t\n ])
+whitespace		([\t\n \r])
 relop           ([<>!]=?|==)
 char            ([^\\"\n\r])
 legal_escape \\[\\"nrt0x]
+illegal_escape \\[^\\"nrt0x]
 qu              ([\"])
 comment         (\/\/)
 %x WORK_STRING
 %x WORK_COMMENT
 %%
 
-{digit}+          			return NUM;
+0|[1-9]{digit}*      			return NUM;
 void                        return VOID;
 int                         return INT;
 byte                        return BYTE;
@@ -43,16 +44,17 @@ continue                   return CONTINUE;
 \)                          return RPAREN;
 \{                          return LBRACE;
 \}                          return RBRACE;
-{comment}                   BEGIN(WORK_COMMENT);
-<WORK_COMMENT>[^\n\r]*      BEGIN(INITIAL); return COMMENT;
+{comment}[^\n\r]*           return COMMENT;
 {relop}                      return RELOP;
 =                           return ASSIGN;
 [*+/-]                      return BINOP;
 {letter}({letter}|{digit})* return ID;
+
 {qu}                        BEGIN(WORK_STRING);
 <WORK_STRING>({char}|{legal_escape})*{qu}  BEGIN(INITIAL); return STRING;
-<WORK_STRING>([^\r\n\"])      BEGIN(INITIAL); return -1;
-<WORK_STRING><<EOF>>     BEGIN(INITIAL); return -1;
+<WORK_STRING>({char}|{illegal_escape})*{qu} BEGIN(INITIAL); return 30;
+<WORK_STRING>.                              BEGIN(INITIAL); return 31;
+
 {whitespace}				;
 
 .	                        return -2;

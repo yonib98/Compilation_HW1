@@ -11,11 +11,11 @@ bool checkQu(){
 }
 
 bool checkHexa(int i){
-    if(i >= yyleng){
+    if (i+2>=yyleng){
         return false;
     }
-    char first = yytext[i-1];
-    char second = yytext[i];
+    char first = yytext[i+1];
+    char second = yytext[i+2];
     if(!(first == '0' || first == '1' || first == '2' || first == '3' || first == '4' || first == '5' || first == '6' || first == '7')){
         return false;
     }
@@ -43,21 +43,19 @@ int checkEscape(){
 }
 
 void printHexError(int i){
-    bool res = checkHexa(i+2);
-    if (!res) {
-        bool has_one = i + 1 < yyleng - 1;
-        bool has_two = i + 1 < yyleng - 2;
-        std::cout << "Error undefined escape sequence x";
-        if (has_one) {
-            std::cout << yytext[i + 1];
-        }
-        if (has_two) {
-            std::cout << yytext[i + 2];
-        }
-        std::cout << "\n";
-        exit(0);
+    bool has_one = i + 1 < yyleng - 1;
+    bool has_two = i + 1 < yyleng - 2;
+    std::cout << "Error undefined escape sequence x";
+    if (has_one) {
+        std::cout << yytext[i + 1];
     }
+    if (has_two) {
+        std::cout << yytext[i + 2];
+    }
+    std::cout << "\n";
+    exit(0);
 }
+
 
 std::string processLexema(){
     int i = 0;
@@ -77,11 +75,14 @@ std::string processLexema(){
                     break;
                 case 'x':
                     hex_string = "";
-                    printHexError(i+1);
-                    hex_string+= yytext[i+2];
-                    hex_string+= yytext[i+3];
-                    processed+=(char)std::stoi(hex_string,0,16);
-                    i+=2;
+                    if(!checkHexa(i+1)) {
+                        printHexError(i + 1);
+                    }else{
+                        hex_string += yytext[i + 2];
+                        hex_string += yytext[i + 3];
+                        processed += (char) std::stoi(hex_string, 0, 16);
+                        i += 2;
+                    }
                     break;
                 case '\\':
                     processed += '\\';
@@ -108,6 +109,14 @@ void printLex(std::string lex, int token,std::vector<std::string> a_very_sad_arr
     std::string val = (token != 26) ? lex : "//"; //Do not print comment
     std::cout << yylineno << space  << a_very_sad_array[token] << space << val << "\n";
 }
+char findIllegalEscape(){
+    for (int i=0;i<yyleng-1;i++){
+        if(yytext[i]=='\\'){
+            return yytext[i+1];
+        }
+    }
+    throw std::exception();
+}
 int main()
 {
     std::vector<std::string> a_very_sad_array = {"","VOID", "INT", "BYTE", "B", "BOOL", "AND", "OR", "NOT", "TRUE", "FALSE", "RETURN", "IF", "ELSE", "WHILE",
@@ -116,22 +125,20 @@ int main()
     int token;
     // std::cout << "YOU CHANGED TOKENS.HPP: YYLENG: INT -> UNSIGNED LONG " << std::endl;
     while ((token = yylex())) {
-        if(token == -2){
-            std::cout << "Error " <<yytext[0] << "\n";
+        if(token==30){
+           char illegal_escp =  findIllegalEscape();
+            std::cout << "Error undefined escape sequence " << illegal_escp << "\n";
             exit(0);
         }
-        if(token == -1) {
-            if (!checkQu()) {
-                std::cout << "Error unclosed string\n";
-                exit(0);
-            }
-            int res = checkEscape();
-            if (res == 0) {
-                std::cout << "ERROR res = 0!!!!" << std::endl;
-            }
-            std::cout << "Error undefined escape sequence " << yytext[res] << "\n";
+        if (token == 31){
+            std::cout << "Error unclosed string\n";
             exit(0);
-        }else if(token == STRING){
+        }
+        if(token == -2) {
+            std::cout << "Error " << yytext[0] << "\n";
+            exit(0);
+        }
+        else if(token == STRING){
             std::string lex = processLexema();
             printLex(lex, token, a_very_sad_array);
         }else {
