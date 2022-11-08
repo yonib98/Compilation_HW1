@@ -53,8 +53,8 @@ continue                   return CONTINUE;
 {qu}                        BEGIN(WORK_STRING);
 <WORK_STRING>({char}|{legal_escape})*{qu}  BEGIN(INITIAL); return STRING;
 <WORK_STRING>({char}|{illegal_escape})*{qu} BEGIN(INITIAL); return 30;
-<WORK_STRING>.                              BEGIN(INITIAL); return 31;
-
+<WORK_STRING>.|[\r\n]                            BEGIN(INITIAL); return 31;
+<WORK_STRING><<EOF>>                        return 31;
 {whitespace}				;
 
 .	                        return -2;
