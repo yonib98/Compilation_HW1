@@ -23,7 +23,8 @@ bool checkHexa(int i){
     if(!(second == '0' || second == '1' || second == '2' || second == '3' \
         || second == '4' || second == '5' || second == '6' || second == '7' \
         || second == '8' || second == '9' || second == 'A' || second == 'B' \
-        || second == 'C' || second == 'D' || second == 'E' || second == 'F' )){
+        || second == 'C' || second == 'D' || second == 'E' || second == 'F' \
+        || second == 'a' || second=='b' || second=='c' || second=='d' || second == 'e' || second=='f')){
         return false;
     }
     return true;
@@ -107,7 +108,7 @@ std::string processLexema(){
 void printLex(std::string lex, int token,std::vector<std::string> a_very_sad_array){
     char space = ' ';
     std::string val = (token != 26) ? lex : "//"; //Do not print comment
-    std::cout << yylineno << space  << a_very_sad_array[token] << space << val << "\n";
+    std::cout << yylineno << space  << a_very_sad_array[token] << space << val.c_str() << "\n";
 }
 char findIllegalEscape(){
     for (int i=0;i<yyleng-1;i++){
@@ -126,11 +127,13 @@ int main()
     // std::cout << "YOU CHANGED TOKENS.HPP: YYLENG: INT -> UNSIGNED LONG " << std::endl;
     while ((token = yylex())) {
         if(token==30){
+            //Closed string with illegal escape
            char illegal_escp =  findIllegalEscape();
             std::cout << "Error undefined escape sequence " << illegal_escp << "\n";
             exit(0);
         }
         if (token == 31){
+            //unclosed string
             std::cout << "Error unclosed string\n";
             exit(0);
         }
